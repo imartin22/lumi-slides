@@ -14,7 +14,7 @@ import {
 
 const LumiIcon = ({ className = "w-6 h-6" }) => (
   <img 
-    src="/lumi-icon.png" 
+    src={`${import.meta.env.BASE_URL}lumi-icon.png`}
     alt="Lumi AI" 
     className={`object-contain ${className}`}
   />
