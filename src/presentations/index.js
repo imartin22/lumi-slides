@@ -1,4 +1,5 @@
 import { workflowPresentation, workflowPrintSlides } from './WorkflowPresentation';
+import { sprintPlanningPresentation, sprintPlanningPrintSlides } from './SprintPlanningPresentation';
 
 export const presentations = [
   {
@@ -8,6 +9,14 @@ export const presentations = [
     description: 'Roadmap Q4 2025 - Update para Director de Producto',
     component: workflowPresentation,
     printSlides: workflowPrintSlides
+  },
+  {
+    id: 'sprint-planning-dic-2025',
+    title: 'Sprint Planning',
+    date: 'Dic 1-15, 2025',
+    description: 'Sprint Planning para Dev Team - Actions + Assistant',
+    component: sprintPlanningPresentation,
+    printSlides: sprintPlanningPrintSlides
   }
 ];
 

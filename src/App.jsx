@@ -8,20 +8,43 @@ import { SlideContainer } from './components/SlideContainer';
 // Import presentations manager
 import { presentations, getPrintSlides } from './presentations';
 
-import { ArrowLeft, ArrowRight, Download, Loader2, Menu, X, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 // Context for print mode
 import { PrintModeContext } from './context/PrintModeContext';
 
+// Get presentation index from URL query parameter
+const getPresentationIndexFromURL = () => {
+  const params = new URLSearchParams(window.location.search);
+  const presentationId = params.get('presentation');
+  if (presentationId) {
+    const index = presentations.findIndex(p => p.id === presentationId);
+    if (index !== -1) return index;
+  }
+  return 0;
+};
+
 function App() {
-  const [currentPresentationIndex, setCurrentPresentationIndex] = useState(0);
+  // Initialize with URL parameter - this runs synchronously on first render
+  const [currentPresentationIndex, setCurrentPresentationIndex] = useState(() => getPresentationIndexFromURL());
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
+
+  // Listen for URL changes (popstate for back/forward)
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const newIndex = getPresentationIndexFromURL();
+      setCurrentPresentationIndex(newIndex);
+      setCurrentSlideIndex(0);
+    };
+    
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
   const currentPresentation = presentations[currentPresentationIndex];
   const activeSlides = currentPresentation.component.slides;
   const totalSlides = activeSlides.length;
@@ -35,17 +58,10 @@ function App() {
     if (currentSlideIndex > 0) setCurrentSlideIndex(prev => prev - 1);
   };
 
-  const changePresentation = (index) => {
-    setCurrentPresentationIndex(index);
-    setCurrentSlideIndex(0);
-    setIsMenuOpen(false);
-  };
-
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'Space') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
-      if (e.key === 'Escape') setIsMenuOpen(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -172,58 +188,8 @@ function App() {
         </div>
       </PrintModeContext.Provider>
 
-      {/* Menu Overlay */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 overflow-hidden"
-          >
-            <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50 rounded-t-xl mb-1">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Presentaciones Disponibles</span>
-              <button onClick={() => setIsMenuOpen(false)} className="p-1 hover:bg-gray-200 rounded-full transition-colors">
-                <X size={14} className="text-gray-400" />
-              </button>
-            </div>
-            <div className="max-h-[300px] overflow-y-auto">
-              {presentations.map((p, idx) => (
-                <button
-                  key={p.id}
-                  onClick={() => changePresentation(idx)}
-                  className={`w-full text-left p-3 rounded-xl transition-all mb-1 relative group ${
-                    idx === currentPresentationIndex 
-                      ? 'bg-tn-blue text-white shadow-md' 
-                      : 'hover:bg-gray-50 text-gray-600 hover:text-tn-blue'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <span className="font-bold text-sm block mb-1 pr-6">{p.title}</span>
-                    {idx === currentPresentationIndex && <Check size={14} className="absolute right-3 top-3.5" />}
-                  </div>
-                  <div className={`text-xs ${idx === currentPresentationIndex ? 'text-blue-200' : 'text-gray-400 group-hover:text-blue-300'}`}>
-                    {p.date}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Controls */}
       <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 items-center transition-all hover:shadow-[0_8px_40px_rgba(0,0,0,0.16)] z-50">
-        <button 
-          onClick={() => setIsMenuOpen(!isMenuOpen)} 
-          className={`p-2 rounded-xl transition-colors ${isMenuOpen ? 'bg-tn-blue text-white' : 'hover:bg-gray-50 text-tn-text'}`}
-          title="Cambiar presentación"
-        >
-          <Menu size={20} />
-        </button>
-
-        <div className="w-px h-4 bg-gray-200 mx-1" />
-
         <button onClick={prevSlide} disabled={currentSlideIndex === 0} className="p-2 hover:bg-gray-50 rounded-xl disabled:opacity-30 text-tn-text transition-colors">
           <ArrowLeft size={20} />
         </button>
